@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using DeliveryRushExam.Data;
 using UnityEngine;
 
@@ -15,10 +14,18 @@ namespace DeliveryRushExam.Core
         [Header("Scene References")]
         [SerializeField] private ScoreManager scoreManager;
 
-        private readonly List<OrderData> activeOrders = new List<OrderData>();
+        private readonly List<OrderData> activeOrders = new();
+
         private readonly string[] customerNames =
         {
-            "Alex", "Taylor", "Sam", "Jordan", "Casey", "Morgan", "Riley", "Avery"
+            "Alex",
+            "Taylor",
+            "Sam",
+            "Jordan",
+            "Casey",
+            "Morgan",
+            "Riley",
+            "Avery"
         };
 
         private float spawnTimer;
@@ -26,6 +33,7 @@ namespace DeliveryRushExam.Core
         private bool isRunning;
 
         public IReadOnlyList<OrderData> ActiveOrders => activeOrders;
+
         public event Action OrdersChanged;
 
         private void Awake()
@@ -43,58 +51,105 @@ namespace DeliveryRushExam.Core
                 return;
             }
 
-            spawnTimer += Time.deltaTime;
-            if (spawnTimer >= spawnInterval)
-            {
-                spawnTimer = 0f;
-                TrySpawnOrder();
-            }
+            UpdateSpawnTimer();
 
-            for (int i = activeOrders.Count - 1; i >= 0; i--)
+            int expiredOrders = UpdateOrders(Time.deltaTime);
+
+            if (expiredOrders > 0)
             {
-                activeOrders[i].remainingTime -= Time.deltaTime;
-            }
-            
-            int expiredCount = activeOrders.Where(order => order.remainingTime <= 0f).Count();
-            if (expiredCount > 0)
-            {
-                activeOrders.RemoveAll(order => order.remainingTime <= 0f);
                 OrdersChanged?.Invoke();
             }
 
-            if (verboseLogs)
-            {
-                Debug.Log("Active orders: " + activeOrders.Count + " expired: " + expiredCount);
-            }
+            LogOrders(expiredOrders);
         }
 
         public void StartOrders()
         {
             activeOrders.Clear();
             nextOrderId = 0;
+
+            // Fuerza spawn inmediato como en la versión original.
             spawnTimer = spawnInterval;
+
             isRunning = true;
+
             OrdersChanged?.Invoke();
         }
 
         public void StopOrders()
         {
             isRunning = false;
+
             activeOrders.Clear();
+
             OrdersChanged?.Invoke();
         }
 
         public void CompleteOrder(string orderId)
         {
-            OrderData order = activeOrders.FirstOrDefault(activeOrder => activeOrder.id == orderId);
-            if (order == null)
+            for (int i = 0; i < activeOrders.Count; i++)
+            {
+                if (activeOrders[i].id != orderId)
+                {
+                    continue;
+                }
+
+                OrderData order = activeOrders[i];
+
+                activeOrders.RemoveAt(i);
+
+                scoreManager.AddCompletedOrder(order);
+
+                OrdersChanged?.Invoke();
+
+                return;
+            }
+        }
+
+        private void UpdateSpawnTimer()
+        {
+            spawnTimer += Time.deltaTime;
+
+            if (spawnTimer < spawnInterval)
             {
                 return;
             }
 
-            activeOrders.Remove(order);
-            scoreManager.AddCompletedOrder(order);
-            OrdersChanged?.Invoke();
+            spawnTimer = 0f;
+
+            TrySpawnOrder();
+        }
+
+        private int UpdateOrders(float deltaTime)
+        {
+            int expiredCount = 0;
+
+            for (int i = activeOrders.Count - 1; i >= 0; i--)
+            {
+                OrderData order = activeOrders[i];
+
+                order.remainingTime -= deltaTime;
+
+                if (order.remainingTime > 0f)
+                {
+                    continue;
+                }
+
+                activeOrders.RemoveAt(i);
+                expiredCount++;
+            }
+
+            return expiredCount;
+        }
+
+        private void LogOrders(int expiredCount)
+        {
+            if (!verboseLogs)
+            {
+                return;
+            }
+
+            Debug.Log($"Active orders: {activeOrders.Count} expired: {expiredCount}");
         }
 
         private void TrySpawnOrder()
@@ -104,13 +159,25 @@ namespace DeliveryRushExam.Core
                 return;
             }
 
-            string id = "ORDER_" + nextOrderId;
-            string customer = customerNames[UnityEngine.Random.Range(0, customerNames.Length)];
+            string id = $"ORDER_{nextOrderId}";
+
+            string customer =
+                customerNames[UnityEngine.Random.Range(0, customerNames.Length)];
+
             int points = UnityEngine.Random.Range(80, 151);
+
             int coins = UnityEngine.Random.Range(4, 12);
+
             float limit = UnityEngine.Random.Range(7f, 14f);
 
-            activeOrders.Add(new OrderData(id, customer, points, coins, limit));
+            activeOrders.Add(
+                new OrderData(
+                    id,
+                    customer,
+                    points,
+                    coins,
+                    limit));
+
             nextOrderId++;
 
             OrdersChanged?.Invoke();

@@ -21,6 +21,7 @@ namespace DeliveryRushExam.Core
         private float remainingTime;
         private bool isPlaying;
         private bool isFinishing;
+        private int lastDisplayedTime;
 
         public float RemainingTime => remainingTime;
         public float MatchDurationSeconds => matchDurationSeconds;
@@ -28,6 +29,8 @@ namespace DeliveryRushExam.Core
 
         public event Action MatchStarted;
         public event Action MatchEnded;
+        public event Action<int> TimeChanged;
+        
 
         private void Awake()
         {
@@ -69,6 +72,14 @@ namespace DeliveryRushExam.Core
 
             remainingTime -= Time.deltaTime;
 
+            int currentTime = Mathf.CeilToInt(remainingTime);
+
+            if (currentTime != lastDisplayedTime)
+            {
+                lastDisplayedTime = currentTime;
+                TimeChanged?.Invoke(currentTime);
+            }
+
             if (verboseLogs)
             {
                 Debug.Log("Match time: " + remainingTime);
@@ -83,6 +94,8 @@ namespace DeliveryRushExam.Core
         public void StartMatch()
         {
             remainingTime = matchDurationSeconds;
+            lastDisplayedTime = Mathf.CeilToInt(remainingTime);
+            TimeChanged?.Invoke(lastDisplayedTime);
             isPlaying = true;
             isFinishing = false;
 
