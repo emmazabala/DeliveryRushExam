@@ -27,6 +27,7 @@ namespace DeliveryRushExam.UI
         [Header("Popups")]
         [SerializeField] private RectTransform popupsContainer;
         [SerializeField] private ScorePopupView scorePopupPrefab;
+        [SerializeField] private ScorePopupPool scorePopupPool;
 
         [Header("Panels")]
         [SerializeField] private GameObject gameplayPanel;
@@ -160,14 +161,13 @@ namespace DeliveryRushExam.UI
 
         private void ShowScorePopup(OrderData order)
         {
-            ScorePopupView popup = Instantiate(scorePopupPrefab, popupsContainer);
+            ScorePopupView popup = scorePopupPool.Get();
 
-            popup.gameObject.SetActive(true);
-
-            popup.transform.localPosition = new Vector3(
-                Random.Range(-90f, 90f),
-                Random.Range(-25f, 35f),
-                0f);
+            popup.transform.localPosition =
+                new Vector3(
+                    Random.Range(-90f, 90f),
+                    Random.Range(-25f, 35f),
+                    0f);
 
             popup.Setup($"+{order.rewardPoints} points");
         }

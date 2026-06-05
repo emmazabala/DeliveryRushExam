@@ -1,3 +1,4 @@
+using System;
 using TMPro;
 using UnityEngine;
 
@@ -11,6 +12,8 @@ namespace DeliveryRushExam.UI
         private CanvasGroup canvasGroup;
         private float age;
 
+        public event Action<ScorePopupView> LifetimeFinished;
+
         private void Awake()
         {
             canvasGroup = GetComponent<CanvasGroup>();
@@ -19,26 +22,29 @@ namespace DeliveryRushExam.UI
         public void Setup(string message)
         {
             age = 0f;
+
             messageText.text = message;
 
-            if (canvasGroup)
+            if (canvasGroup != null)
             {
                 canvasGroup.alpha = 1f;
             }
+
+            gameObject.SetActive(true);
         }
 
         private void Update()
         {
             age += Time.deltaTime;
 
-            if (canvasGroup)
+            if (canvasGroup != null)
             {
                 canvasGroup.alpha = 1f - age / lifetime;
             }
 
             if (age >= lifetime)
             {
-                Destroy(gameObject);
+                LifetimeFinished?.Invoke(this);
             }
         }
     }
