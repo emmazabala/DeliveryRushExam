@@ -108,6 +108,8 @@ namespace DeliveryRushExam.Core
 
         public async Task FinishMatchAsync()
         {
+            Debug.Log("FinishMatchAsync Started");
+            
             if (isFinishing)
             {
                 return;
@@ -117,6 +119,8 @@ namespace DeliveryRushExam.Core
             isPlaying = false;
 
             orderManager.StopOrders();
+            
+            Debug.Log("Calling SaveMatchResultAsync");
 
             await saveManager.SaveMatchResultAsync(
                 scoreManager.Score,

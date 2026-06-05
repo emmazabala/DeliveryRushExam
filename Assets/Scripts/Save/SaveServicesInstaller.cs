@@ -10,19 +10,27 @@ namespace DeliveryRushExam.Save
             Cloud
         }
 
-        [SerializeField] private SaveMode saveMode = SaveMode.Local;
+        [SerializeField]
+        private SaveMode saveMode = SaveMode.Local;
 
         private void Awake()
         {
-            // Registro inicial para que el proyecto funcione.
-            // El punto de extensión esperado es registrar una abstracción común.
-            if (saveMode == SaveMode.Local)
+            Debug.Log($"Save Mode Selected: {saveMode}");
+            
+            ISaveService saveService;
+
+            switch (saveMode)
             {
-                ServiceLocator.Register(new LocalSaveService());
-                return;
+                case SaveMode.Cloud:
+                    saveService = new UgsCloudSaveService();
+                    break;
+
+                default:
+                    saveService = new LocalSaveService();
+                    break;
             }
 
-            ServiceLocator.Register(new UgsCloudSaveService());
+            ServiceLocator.Register<ISaveService>(saveService);
         }
     }
 }
